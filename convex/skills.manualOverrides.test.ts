@@ -134,6 +134,42 @@ describe('skills manual overrides', () => {
     )
   })
 
+  it('increments global public count when an override restores a hidden skill', async () => {
+    const now = 1_700_000_050_000
+    vi.spyOn(Date, 'now').mockReturnValue(now)
+    vi.mocked(requireUser).mockResolvedValue({
+      userId: 'users:moderator',
+      user: { _id: 'users:moderator', role: 'moderator' },
+    } as never)
+
+    const skill = {
+      _id: 'skills:1',
+      latestVersionId: 'skillVersions:1',
+      softDeletedAt: undefined,
+      moderationStatus: 'hidden',
+      moderationReason: 'scanner.vt.suspicious',
+      moderationVerdict: 'suspicious',
+      moderationFlags: ['flagged.suspicious'],
+      moderationReasonCodes: ['suspicious.vt_suspicious'],
+      moderationSourceVersionId: 'skillVersions:1',
+    }
+
+    const { ctx, patch } = makeCtx({ skill })
+
+    await setSkillManualOverrideHandler(ctx, {
+      skillId: 'skills:1',
+      note: 'reviewed and okay to list',
+    })
+
+    expect(patch).toHaveBeenCalledWith(
+      'globalStats:1',
+      expect.objectContaining({
+        activeSkillsCount: 2,
+        updatedAt: now,
+      }),
+    )
+  })
+
   it('clears a skill-level override and restores scanner-derived suspicious state', async () => {
     const now = 1_700_000_100_000
     vi.spyOn(Date, 'now').mockReturnValue(now)
@@ -246,5 +282,33 @@ describe('skills manual overrides', () => {
         isSuspicious: false,
       }),
     )
+  })
+
+  it('rejects override notes longer than the max length', async () => {
+    vi.mocked(requireUser).mockResolvedValue({
+      userId: 'users:moderator',
+      user: { _id: 'users:moderator', role: 'moderator' },
+    } as never)
+
+    const skill = {
+      _id: 'skills:1',
+      latestVersionId: 'skillVersions:1',
+      softDeletedAt: undefined,
+      moderationStatus: 'active',
+      moderationReason: 'scanner.vt.suspicious',
+      moderationVerdict: 'suspicious',
+      moderationFlags: ['flagged.suspicious'],
+    }
+
+    const { ctx, patch, insert } = makeCtx({ skill })
+
+    await expect(
+      setSkillManualOverrideHandler(ctx, {
+        skillId: 'skills:1',
+        note: 'x'.repeat(1201),
+      }),
+    ).rejects.toThrow('Audit note must be at most 1200 characters.')
+    expect(patch).not.toHaveBeenCalled()
+    expect(insert).not.toHaveBeenCalled()
   })
 })

@@ -879,13 +879,15 @@ function Management() {
                   </div>
                 </div>
                 <div className="management-actions">
-                  <Link
-                    className="btn"
-                    to="/management"
-                    search={{ skill: entry.skill?.slug }}
-                  >
-                    Manage
-                  </Link>
+                  {entry.skill ? (
+                    <Link
+                      className="btn"
+                      to="/management"
+                      search={{ skill: entry.skill.slug }}
+                    >
+                      Manage
+                    </Link>
+                  ) : null}
                   {entry.skill ? (
                     <Link
                       className="btn"

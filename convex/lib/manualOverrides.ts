@@ -49,6 +49,13 @@ export function applyManualOverrideToSkillPatch(params: {
   override: ManualModerationOverride
   now: number
 }): SkillModerationPatch {
+  if (
+    params.basePatch?.moderationVerdict === 'malicious' ||
+    params.basePatch?.moderationFlags?.includes('blocked.malware')
+  ) {
+    return params.basePatch
+  }
+
   const moderationFlags = legacyFlagsFromVerdict(params.override.verdict)
   const moderationReason = buildManualOverrideReason(params.override.verdict)
 

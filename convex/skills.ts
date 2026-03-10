@@ -147,7 +147,12 @@ function trimManualOverrideNote(note: string) {
   if (!trimmed) {
     throw new ConvexError('Audit note is required.')
   }
-  return trimmed.slice(0, MAX_MANUAL_OVERRIDE_NOTE_LENGTH)
+  if (trimmed.length > MAX_MANUAL_OVERRIDE_NOTE_LENGTH) {
+    throw new ConvexError(
+      `Audit note must be at most ${MAX_MANUAL_OVERRIDE_NOTE_LENGTH} characters.`,
+    )
+  }
+  return trimmed
 }
 
 function normalizeAnalysisStatus(status: string | undefined) {
@@ -275,11 +280,11 @@ async function patchStructuredModerationFromVersion(
   >,
 ) {
   const now = Date.now()
-  const basePatch = buildStructuredModerationPatch({
-    staticScan: version.staticScan,
-    vtStatus: version.vtAnalysis?.status,
-    llmStatus: version.llmAnalysis?.status,
-    sourceVersionId: version._id,
+  const owner = skill.ownerUserId ? await ctx.db.get(skill.ownerUserId) : null
+  const basePatch = buildScannerModerationPatchFromVersion({
+    owner,
+    version,
+    now,
   })
   const patch = applySkillManualOverrideToSkillPatch({
     skill,
@@ -4040,6 +4045,8 @@ export const setSkillManualOverride = mutation({
       manualOverride,
       ...patch,
     })
+    const nextSkill = { ...skill, manualOverride, ...patch }
+    await adjustGlobalPublicCountForSkillChange(ctx, skill, nextSkill)
 
     await ctx.db.insert('auditLogs', {
       actorUserId: user._id,

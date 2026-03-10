@@ -43,4 +43,38 @@ describe('manualOverrides', () => {
     })
     expect(patch.moderationReasonCodes).toEqual(['suspicious.dynamic_code_execution'])
   })
+
+  it('preserves malicious scanner state over a clean override', () => {
+    const now = 1_700_000_100_000
+    const patch = applyManualOverrideToSkillPatch({
+      basePatch: {
+        moderationStatus: 'hidden',
+        moderationReason: 'scanner.vt.malicious',
+        moderationVerdict: 'malicious',
+        moderationFlags: ['blocked.malware'],
+        moderationSummary: 'Detected: malicious.known_blocked_signature',
+        hiddenAt: now,
+        hiddenBy: undefined,
+        lastReviewedAt: now,
+        updatedAt: now,
+      },
+      override: {
+        verdict: 'clean',
+        note: 'earlier false positive review',
+        reviewerUserId: userId('users:reviewer'),
+        updatedAt: now,
+      },
+      now,
+    })
+
+    expect(patch).toMatchObject({
+      moderationStatus: 'hidden',
+      moderationReason: 'scanner.vt.malicious',
+      moderationVerdict: 'malicious',
+      moderationFlags: ['blocked.malware'],
+      hiddenAt: now,
+      lastReviewedAt: now,
+      updatedAt: now,
+    })
+  })
 })
