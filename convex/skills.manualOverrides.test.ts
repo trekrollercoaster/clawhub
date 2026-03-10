@@ -18,7 +18,6 @@ type WrappedHandler<TArgs, TResult = unknown> = {
 const setSkillManualOverrideHandler = (
   setSkillManualOverride as unknown as WrappedHandler<{
     skillId: string
-    verdict: 'clean' | 'caution'
     note: string
   }>
 )._handler
@@ -105,7 +104,6 @@ describe('skills manual overrides', () => {
 
     await setSkillManualOverrideHandler(ctx, {
       skillId: 'skills:1',
-      verdict: 'clean',
       note: 'reviewed locally',
     })
 

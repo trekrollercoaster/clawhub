@@ -20,7 +20,7 @@ export type SkillModerationInfo = {
   isHiddenByMod: boolean
   isRemoved: boolean
   overrideActive?: boolean
-  verdict?: 'clean' | 'caution' | 'suspicious' | 'malicious'
+  verdict?: 'clean' | 'suspicious' | 'malicious'
   reason?: string
 }
 
@@ -120,11 +120,9 @@ export function SkillHeader({
     !modInfo?.isMalwareBlocked &&
     !modInfo?.isSuspicious
   const overrideScanMessage =
-    suppressScanResults && modInfo?.verdict === 'caution'
-      ? 'Security findings were reviewed by staff. This skill remains public with a caution rating.'
-      : suppressScanResults
-        ? 'Security findings were reviewed by staff and cleared for public use.'
-        : null
+    suppressScanResults
+      ? 'Security findings were reviewed by staff and cleared for public use.'
+      : null
 
   return (
     <>

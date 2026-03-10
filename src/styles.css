@@ -3537,13 +3537,6 @@ html.theme-transition::view-transition-new(theme) {
   line-height: 1.4;
 }
 
-.management-override-controls {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  align-items: end;
-}
-
 .management-tool-grid {
   display: grid;
   gap: 12px;

@@ -1,5 +1,5 @@
-export type ModerationVerdict = 'clean' | 'caution' | 'suspicious' | 'malicious'
-export type ScannerModerationVerdict = Exclude<ModerationVerdict, 'caution'>
+export type ModerationVerdict = 'clean' | 'suspicious' | 'malicious'
+export type ScannerModerationVerdict = ModerationVerdict
 
 export type ModerationFindingSeverity = 'info' | 'warn' | 'critical'
 

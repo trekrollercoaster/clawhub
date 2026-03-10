@@ -2,7 +2,7 @@ import type { Doc, Id } from '../_generated/dataModel'
 import { type ModerationVerdict, legacyFlagsFromVerdict } from './moderationReasonCodes'
 import { computeIsSuspicious } from './skillSafety'
 
-export type ManualOverrideVerdict = Extract<ModerationVerdict, 'clean' | 'caution'>
+export type ManualOverrideVerdict = Extract<ModerationVerdict, 'clean'>
 
 export type ManualModerationOverride = {
   verdict: ManualOverrideVerdict

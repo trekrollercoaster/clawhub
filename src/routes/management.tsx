@@ -143,9 +143,6 @@ function Management() {
   const [reportSearchDebounced, setReportSearchDebounced] = useState('')
   const [userSearch, setUserSearch] = useState('')
   const [userSearchDebounced, setUserSearchDebounced] = useState('')
-  const [skillOverrideVerdict, setSkillOverrideVerdict] = useState<
-    'clean' | 'caution'
-  >('clean')
   const [skillOverrideNote, setSkillOverrideNote] = useState('')
 
   const userQuery = userSearchDebounced.trim()
@@ -164,11 +161,8 @@ function Management() {
   }, [selectedCanonicalSlug, selectedOwnerUserId, selectedSkillId])
 
   useEffect(() => {
-    setSkillOverrideVerdict(
-      selectedSkill?.skill?.manualOverride?.verdict ?? 'clean',
-    )
     setSkillOverrideNote('')
-  }, [selectedSkill?.skill?.manualOverride?.verdict, selectedSkillId])
+  }, [selectedSkillId])
 
   useEffect(() => {
     const handle = setTimeout(() => setReportSearchDebounced(reportSearch), 250)
@@ -243,7 +237,6 @@ function Management() {
     if (!selectedSkill?.skill) return
     void setSkillManualOverride({
       skillId: selectedSkill.skill._id,
-      verdict: skillOverrideVerdict,
       note: skillOverrideNote,
     })
       .then(() => {
@@ -259,7 +252,6 @@ function Management() {
       note: skillOverrideNote,
     })
       .then(() => {
-        setSkillOverrideVerdict('clean')
         setSkillOverrideNote('')
       })
       .catch((error) => window.alert(formatMutationError(error)))
@@ -497,31 +489,13 @@ function Management() {
                             it.
                           </span>
                         </div>
-                        <div className="management-controls management-override-controls">
-                          <label className="management-control management-control-stack">
-                            <span className="mono">skill verdict</span>
-                            <select
-                              className="management-field"
-                              value={skillOverrideVerdict}
-                              onChange={(event) => {
-                                const value = event.target.value
-                                if (value === 'clean' || value === 'caution') {
-                                  setSkillOverrideVerdict(value)
-                                }
-                              }}
-                            >
-                              <option value="clean">clean</option>
-                              <option value="caution">caution</option>
-                            </select>
-                          </label>
-                        </div>
                         <textarea
                           className="form-input management-textarea"
                           rows={4}
                           placeholder={
                             skill.manualOverride
-                              ? 'Audit note required to update or clear the skill override'
-                              : 'Audit note required for skill override'
+                              ? 'Audit note required to update or clear the okay override'
+                              : 'Audit note required to mark this skill okay'
                           }
                           value={skillOverrideNote}
                           onChange={(event) =>
@@ -536,8 +510,8 @@ function Management() {
                             onClick={applySkillOverride}
                           >
                             {skill.manualOverride
-                              ? 'Update skill override'
-                              : 'Apply skill override'}
+                              ? 'Update okay override'
+                              : 'Mark skill okay'}
                           </button>
                           {skill.manualOverride ? (
                             <button
@@ -1046,7 +1020,7 @@ function formatManualOverrideState(
   reviewer?: ManagementUserSummary | null,
 ) {
   if (!override) return 'No override.'
-  return `${override.verdict} · reviewer ${formatManagementUserLabel(reviewer, override.reviewerUserId)} · updated ${formatTimestamp(
+  return `${formatVerdictLabel(override.verdict)} · reviewer ${formatManagementUserLabel(reviewer, override.reviewerUserId)} · updated ${formatTimestamp(
     override.updatedAt,
   )} · ${override.note}`
 }
@@ -1067,7 +1041,7 @@ function formatAuditActionLabel(action: string, metadata?: unknown) {
   if (action === 'skill.manual_override.set') {
     const verdict =
       typeof record?.verdict === 'string' ? record.verdict : 'unknown'
-    return `Override set to ${verdict}`
+    return `Override set to ${formatVerdictLabel(verdict)}`
   }
   if (action === 'skill.manual_override.clear') {
     return 'Override cleared'
@@ -1108,7 +1082,9 @@ function formatAuditMetadataSummary(action: string, metadata?: unknown) {
     if (note) return note
     const previousVerdict =
       typeof record.previousVerdict === 'string' ? record.previousVerdict : null
-    return previousVerdict ? `Previous verdict: ${previousVerdict}` : null
+    return previousVerdict
+      ? `Previous verdict: ${formatVerdictLabel(previousVerdict)}`
+      : null
   }
 
   if (action === 'skill.manual_override.clear') {
@@ -1117,7 +1093,7 @@ function formatAuditMetadataSummary(action: string, metadata?: unknown) {
     const previousVerdict =
       typeof record.previousVerdict === 'string' ? record.previousVerdict : null
     return previousVerdict
-      ? `Previous override verdict: ${previousVerdict}`
+      ? `Previous override verdict: ${formatVerdictLabel(previousVerdict)}`
       : null
   }
 
@@ -1162,4 +1138,8 @@ function asAuditMetadataRecord(metadata: unknown) {
   if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata))
     return null
   return metadata as Record<string, unknown>
+}
+
+function formatVerdictLabel(verdict: string) {
+  return verdict === 'clean' ? 'okay' : verdict
 }

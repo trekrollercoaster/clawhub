@@ -339,13 +339,12 @@ function stripSuspiciousFlag(flags: string[] | undefined) {
 }
 
 function buildManualOverrideRecord(params: {
-  verdict: 'clean' | 'caution'
   note: string
   reviewerUserId: Id<'users'>
   updatedAt: number
 }): ManualModerationOverride {
   return {
-    verdict: params.verdict,
+    verdict: 'clean',
     note: trimManualOverrideNote(params.note),
     reviewerUserId: params.reviewerUserId,
     updatedAt: params.updatedAt,
@@ -4009,7 +4008,6 @@ export const setBatch = mutation({
 export const setSkillManualOverride = mutation({
   args: {
     skillId: v.id('skills'),
-    verdict: v.union(v.literal('clean'), v.literal('caution')),
     note: v.string(),
   },
   handler: async (ctx, args) => {
@@ -4027,7 +4025,6 @@ export const setSkillManualOverride = mutation({
 
     const now = Date.now()
     const manualOverride = buildManualOverrideRecord({
-      verdict: args.verdict,
       note: args.note,
       reviewerUserId: user._id,
       updatedAt: now,

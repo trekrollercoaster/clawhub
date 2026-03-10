@@ -69,7 +69,7 @@ type ModerationEvidence = {
 
 type SkillModerationShape = {
   moderationFlags?: string[]
-  moderationVerdict?: 'clean' | 'caution' | 'suspicious' | 'malicious'
+  moderationVerdict?: 'clean' | 'suspicious' | 'malicious'
   moderationReasonCodes?: string[]
   moderationSummary?: string
   moderationEngineVersion?: string
@@ -98,7 +98,7 @@ type GetBySlugResult = {
     isSuspicious: boolean
     isHiddenByMod: boolean
     isRemoved: boolean
-    verdict?: 'clean' | 'caution' | 'suspicious' | 'malicious'
+    verdict?: 'clean' | 'suspicious' | 'malicious'
     reasonCodes?: string[]
     summary?: string
     engineVersion?: string

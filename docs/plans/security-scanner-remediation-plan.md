@@ -83,7 +83,7 @@ Data model:
 
 Product flow:
 
-- Add staff-only moderation actions to unflag a skill from `suspicious` to `clean` or `caution`.
+- Add staff-only moderation actions to unflag a skill from `suspicious` to `clean`.
 - Require an audit note and store the reviewer identity on every override.
 - Continue using existing GitHub issues as the intake path for now, but resolve them through the
   moderation tool instead of manual data edits.
@@ -106,8 +106,6 @@ Implementation phase:
 - Schema
   - Add an optional `manualOverride` object on `skills`.
   - Store `verdict`, `note`, `reviewerUserId`, and `updatedAt`.
-  - Expand aggregate skill verdict support to include `caution` so staff can apply the Phase 1
-    target state without waiting for full Phase 2 arbitration work.
 - Backend API
   - Add a staff-only mutation to apply a skill-level override and a companion mutation to clear it.
   - Reuse `auditLogs` for override/unflag events instead of adding a new audit sink.
@@ -115,16 +113,15 @@ Implementation phase:
   - Preserve raw scanner evidence/reason codes on the skill while changing the effective aggregate
     verdict, status flags, and summary to the manual override state.
 - Effective state rules
-  - `clean` and `caution` overrides clear the legacy `flagged.suspicious` state and keep the skill
-    public.
+  - `clean` overrides clear the legacy `flagged.suspicious` state and keep the skill public.
   - New publishes and rescans continue updating scanner evidence underneath, but the active
     skill-level override still controls the live/public moderation state until a moderator clears
     it.
 - UI
   - Extend the staff management console with an override panel on the existing skill tooling
     surface.
-  - Support selecting `clean` or `caution`, entering a required audit note, and clearing the
-    current override from the same panel.
+  - Support applying a `clean` override, entering a required audit note, and clearing the current
+    override from the same panel.
   - Show the current skill-level override and latest version context so moderators can confirm what
     is in effect before applying a new action.
   - Add direct `Manage` entry points from reported skills and recent pushes into the existing
@@ -141,8 +138,8 @@ Validation methods:
   - mutation tests for manual clear restoring scanner-derived moderation state
   - regression tests that skill-level overrides continue to win when new scanner data is written
 - Frontend validation
-  - manual verification in the management console that moderators can apply `clean` and `caution`
-    overrides with a required note
+  - manual verification in the management console that moderators can apply a `clean` override with
+    a required note
   - manual verification that recent-push entry points open the correct skill in management
   - manual verification that the flagged warning disappears from the skill page once the skill
     override is applied
@@ -163,11 +160,13 @@ Primary issues:
 Objective:
 
 - Stop early collapsing of scanner signals.
-- Introduce a less blunt aggregate verdict model.
+- Introduce clearer signal arbitration while keeping aggregate verdicts to `clean`, `suspicious`,
+  and `malicious`.
 
 Schema changes in ClawHub:
 
-- Update `convex/schema.ts` to add `caution` to the aggregate verdict enum.
+- Update `convex/schema.ts` to keep the aggregate verdict enum explicit as `clean`, `suspicious`,
+  and `malicious`.
 - Add a structured `moderationSignals` object on skills and versions with:
   - `staticScan`
   - `vtEngines`
@@ -201,19 +200,15 @@ Decision rules:
   - two independent medium-or-higher risk signals
   - undeclared dangerous behavior plus scanner concern
   - explicit capability mismatch between declared behavior and observed behavior
-- `caution`
-  - VT Code Insight concern with clean AV engines and clean local scan
-  - legitimate high-privilege behavior that matches the skill's stated purpose
-  - docs-only or security-tool skill with declared risky examples but no active malicious signal
 - `clean`
   - no meaningful risk signals
 
 Hard rules:
 
 - VT Code Insight alone cannot produce aggregate `suspicious`.
-- Publisher trust can reduce `caution` noise but can never downgrade `suspicious` or `malicious`.
-- Existing `flagged.suspicious` compatibility should only map from aggregate `suspicious`, not
-  from `caution`.
+- Publisher trust can reduce false-positive pressure but can never downgrade `suspicious` or
+  `malicious`.
+- Existing `flagged.suspicious` compatibility should only map from aggregate `suspicious`.
 
 Implementation files in ClawHub:
 
@@ -254,8 +249,7 @@ Tasks:
   [#371](https://github.com/openclaw/clawhub/issues/371),
   [#288](https://github.com/openclaw/clawhub/issues/288), and
   [#192](https://github.com/openclaw/clawhub/issues/192).
-- Close resolved false-positive tickets after rescan confirms the skill is now `clean` or
-  `caution`.
+- Close resolved false-positive tickets after rescan confirms the skill is now `clean`.
 - Close remaining generic false-positive tickets as duplicates of
   [#181](https://github.com/openclaw/clawhub/issues/181) unless they introduce a new trigger
   pattern.
@@ -280,14 +274,14 @@ Primary issues:
 
 Objective:
 
-- Make `caution` and `suspicious` materially different in product behavior.
+- Make `suspicious` and `malicious` materially different in product behavior while keeping
+  everything else `clean`.
 
 UI changes in ClawHub:
 
 - Update `src/components/SkillSecurityScanResults.tsx` to show per-signal rows, not one blended
   status.
 - Update `src/components/SkillHeader.tsx` banner language:
-  - `caution`: "high-privilege or security-sensitive behavior, appears consistent with stated purpose"
   - `suspicious`: "conflicting or risky behavior detected, review carefully"
   - `malicious`: blocked
 - Add explicit evidence and reason code display.
@@ -298,12 +292,10 @@ CLI changes in ClawHub:
 - Update `packages/clawdhub/src/cli/commands/skills.ts`.
 - `malicious`: block install and update.
 - `suspicious`: prompt in interactive mode, require `--force` in non-interactive mode.
-- `caution`: warn, but do not require `--force`.
-- For already-installed trusted skills, allow update-through-caution without skipping.
 
 Acceptance criteria:
 
-- Security-tool and docs-only skills can remain installable under `caution`.
+- Security-tool and docs-only skills can remain installable when they stay `clean`.
 - Truly suspicious skills still require a deliberate override.
 
 ## Phase 5: Social Engineering and Runtime-Payload Scanner
@@ -339,7 +331,7 @@ Severity matrix:
 - raw IP or paste-site remote payload plus execution: `malicious`
 - password-protected archive plus execution instructions: `malicious`
 - external installer without checksum or declared vendor domain: `suspicious`
-- external prerequisite with declared vendor domain and checksum: `caution`
+- external prerequisite with declared vendor domain and checksum: supporting evidence only
 - urgency language by itself: supporting evidence only
 
 Data model changes:
@@ -386,7 +378,7 @@ Scanner behavior:
   themselves.
 - If `skillCategory = docs_only` and bundle has no executable files, lone documentation references
   should not produce aggregate `suspicious` without corroborating signals.
-- If declared capabilities match observed risky behavior, bias toward `caution`.
+- If declared capabilities match observed risky behavior, avoid escalating on that signal alone.
 - If undeclared risky behavior is observed, escalate.
 
 Implementation files in ClawHub:
@@ -401,8 +393,8 @@ Acceptance criteria:
 
 - Issues like [#211](https://github.com/openclaw/clawhub/issues/211),
   [#386](https://github.com/openclaw/clawhub/issues/386), and
-  [#598](https://github.com/openclaw/clawhub/issues/598) move from `suspicious` to `caution` or
-  `clean` when their behavior is declared and consistent.
+  [#598](https://github.com/openclaw/clawhub/issues/598) move from `suspicious` to `clean` when
+  their behavior is declared and consistent.
 
 ## Phase 7: Structured Appeal Workflow
 
@@ -542,7 +534,7 @@ ClawHub test coverage to add:
 - docs-only skill classification tests
 - security-tool fixture tests
 - API snapshot tests for per-signal output
-- CLI tests for `caution` vs `suspicious` policy differences
+- CLI tests for `suspicious` vs `malicious` policy differences
 - downstream sync tests for tombstone propagation
 
 ## Success Metrics
@@ -555,8 +547,6 @@ ClawHub test coverage to add:
 
 ## Open Questions
 
-- Should `caution` be installable non-interactively by default, or should automation require an
-  explicit policy toggle?
 - How much publisher trust should be allowed to influence aggregate verdicts, if at all?
 - Should manual overrides remain moderator-only indefinitely, or should later phases add a second
   review/escalation workflow for high-risk overrides?

@@ -16,14 +16,14 @@ describe('manualOverrides', () => {
     expect(isManualOverrideReason(undefined)).toBe(false)
   })
 
-  it('applies clean/caution overrides as non-suspicious active skill state', () => {
+  it('applies a clean override as non-suspicious active skill state', () => {
     const now = 1_700_000_000_000
     const patch = applyManualOverrideToSkillPatch({
       basePatch: {
         moderationReasonCodes: ['suspicious.dynamic_code_execution'],
       },
       override: {
-        verdict: 'caution',
+        verdict: 'clean',
         note: 'security tool false positive',
         reviewerUserId: userId('users:reviewer'),
         updatedAt: now,
@@ -33,10 +33,10 @@ describe('manualOverrides', () => {
 
     expect(patch).toMatchObject({
       moderationStatus: 'active',
-      moderationReason: 'manual.override.caution',
-      moderationVerdict: 'caution',
+      moderationReason: 'manual.override.clean',
+      moderationVerdict: 'clean',
       moderationFlags: undefined,
-      moderationSummary: 'Manual override (caution): security tool false positive',
+      moderationSummary: 'Manual override (clean): security tool false positive',
       moderationEvaluatedAt: now,
       isSuspicious: false,
       updatedAt: now,

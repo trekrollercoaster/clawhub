@@ -142,11 +142,9 @@ export function SkillDetailPage({
   const suppressVersionScanResults =
     !isStaff && Boolean(modInfo?.overrideActive) && !modInfo?.isMalwareBlocked && !modInfo?.isSuspicious
   const scanResultsSuppressedMessage =
-    suppressVersionScanResults && modInfo?.verdict === 'caution'
-      ? 'Security findings on these releases were reviewed by staff. The skill is public with a caution rating.'
-      : suppressVersionScanResults
-        ? 'Security findings on these releases were reviewed by staff and cleared for public use.'
-        : null
+    suppressVersionScanResults
+      ? 'Security findings on these releases were reviewed by staff and cleared for public use.'
+      : null
   const forkOfLabel = forkOf?.kind === 'duplicate' ? 'duplicate of' : 'fork of'
   const forkOfOwnerHandle = forkOf?.owner?.handle ?? null
   const forkOfOwnerId = forkOf?.owner?.userId ?? null

@@ -6,7 +6,7 @@ import { EMBEDDING_DIMENSIONS } from './lib/embeddings'
 const PLATFORM_SKILL_LICENSE = 'MIT-0' as const
 
 const manualModerationOverride = v.object({
-  verdict: v.union(v.literal('clean'), v.literal('caution')),
+  verdict: v.literal('clean'),
   note: v.string(),
   reviewerUserId: v.id('users'),
   updatedAt: v.number(),
@@ -106,7 +106,6 @@ const skills = defineTable({
   moderationVerdict: v.optional(
     v.union(
       v.literal('clean'),
-      v.literal('caution'),
       v.literal('suspicious'),
       v.literal('malicious'),
     ),
